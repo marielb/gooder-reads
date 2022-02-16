@@ -1,0 +1,8 @@
+version: "3.4"
+services:
+  books-pls:
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    volumes:
+      - .:/app

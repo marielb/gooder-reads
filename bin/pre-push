@@ -1,0 +1,32 @@
+#!/bin/sh
+
+# pre-push hook that runs black, flake8, and unit tests
+# run cp bin/pre-push .git/hooks/ to install from root of project
+# use --no-verify to push without running pre-push hook
+
+echo "Running black..."
+docker-compose run test black --check .
+blackRet=$?
+if [ $blackRet -ne 0 ]; then
+  echo "black failed! try fixing by running: docker-compose run test black ."
+  exit $blackRet
+fi
+
+echo "Running flake8..."
+docker-compose run test flake8 --ignore=E501,W503,F821 --exclude .git,.venv,__pycache__,test/files .
+flakeRet=$?
+if [ $flakeRet -ne 0 ]; then
+  echo "flake8 failed!"
+  exit $flakeRet
+fi
+
+echo "Running isort..."
+docker-compose run test isort . -c -v
+isortRet=$?
+if [ $isortRet -ne 0 ]; then
+  echo "isort failed! try fixing by running: docker-compose run test isort ."
+  exit $isortRet
+fi
+
+echo "Running unit-tests..."
+docker-compose up test
