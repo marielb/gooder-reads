@@ -5,15 +5,15 @@
 # use --no-verify to push without running pre-push hook
 
 echo "Running black..."
-docker-compose run test black --check .
+docker-compose run books-pls black --check .
 blackRet=$?
 if [ $blackRet -ne 0 ]; then
-  echo "black failed! try fixing by running: docker-compose run test black ."
+  echo "black failed! try fixing by running: docker-compose run books-pls black ."
   exit $blackRet
 fi
 
 echo "Running flake8..."
-docker-compose run test flake8 --ignore=E501,W503,F821 --exclude .git,.venv,__pycache__,test/files .
+docker-compose run books-pls flake8 --ignore=E501,W503,F821 --exclude .git,.venv,__pycache__,test/files .
 flakeRet=$?
 if [ $flakeRet -ne 0 ]; then
   echo "flake8 failed!"
@@ -21,12 +21,9 @@ if [ $flakeRet -ne 0 ]; then
 fi
 
 echo "Running isort..."
-docker-compose run test isort . -c -v
+docker-compose run books-pls isort . -c -v
 isortRet=$?
 if [ $isortRet -ne 0 ]; then
-  echo "isort failed! try fixing by running: docker-compose run test isort ."
+  echo "isort failed! try fixing by running: docker-compose run books-pls isort ."
   exit $isortRet
 fi
-
-echo "Running unit-tests..."
-docker-compose up test
