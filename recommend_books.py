@@ -1,34 +1,11 @@
 import argparse
-import json
-import os
-import time
 from collections import Counter
 
-import bs4
-import regex as re
 from selenium import webdriver
-from selenium.common.exceptions import (
-    ElementClickInterceptedException,
-    ElementNotInteractableException,
-    ElementNotVisibleException,
-    NoSuchElementException,
-    StaleElementReferenceException,
-)
-from selenium.webdriver.common.by import By
 
-from get_reviews import get_reviews
 from get_books_on_shelf import get_books
+from get_reviews import get_reviews
 
-
-def store_results(results, *args):
-    filename = "_".join(args) + ".json"
-    with open(filename, "w") as f:
-        json.dump(results, f)
-
-def get_results(*args):
-    filename = "_".join(args) + ".json"
-    with open(filename, "r") as f:
-        return json.load(f)
 
 def get_recommendations(driver: webdriver.Chrome, book_id: str, pages: int = 1):
     reviews = get_reviews(driver, book_id, pages)
@@ -38,7 +15,6 @@ def get_recommendations(driver: webdriver.Chrome, book_id: str, pages: int = 1):
         for shelf in review["shelves"]
         if "favorite" in shelf["name"] or "favourite" in shelf["name"]
     ]
-    store_results(filtered_shelves, driver, book_id)
     print(filtered_shelves)
     books = []
     for shelf in filtered_shelves:

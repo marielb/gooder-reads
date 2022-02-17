@@ -86,15 +86,17 @@ def get_num_likes(node):
 
 def get_shelves(node):
     shelves = []
-    pattern = re.compile("([\d]+.*)")
+    pattern = re.compile("([0-9]+.*)")
 
     if node.find("div", {"class": "uitext greyText bookshelves"}):
         _shelves_node = node.find("div", {"class": "uitext greyText bookshelves"})
         for _shelf_node in _shelves_node.find_all("a"):
-            shelves.append({
-                "name": _shelf_node.text,
-                "shelf_id": pattern.search(_shelf_node["href"]).group(),
-            })
+            shelves.append(
+                {
+                    "name": _shelf_node.text,
+                    "shelf_id": pattern.search(_shelf_node["href"]).group(),
+                }
+            )
     return shelves
 
 

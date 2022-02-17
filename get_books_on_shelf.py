@@ -1,20 +1,8 @@
 import argparse
-import json
-import os
 import time
-from collections import Counter
 
 import bs4
-import regex as re
 from selenium import webdriver
-from selenium.common.exceptions import (
-    ElementClickInterceptedException,
-    ElementNotInteractableException,
-    ElementNotVisibleException,
-    NoSuchElementException,
-    StaleElementReferenceException,
-)
-from selenium.webdriver.common.by import By
 
 
 def scrape_books_on_current_page(driver, url, shelf_id, sort_order="newest"):
@@ -63,7 +51,6 @@ def get_books(driver: webdriver.Chrome, shelf_id: str, pages: int = 1):
     return books
 
 
-
 def initialize_driver():
     print("Starting web driver")
     chrome_options = webdriver.ChromeOptions()
@@ -79,9 +66,7 @@ def initialize_driver():
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--shelf-id", type=str, help="Goodreads shelf ID"
-    )
+    parser.add_argument("--shelf-id", type=str, help="Goodreads shelf ID")
     args = parser.parse_args()
 
     driver = initialize_driver()
