@@ -26,24 +26,6 @@ RATING_STARS_DICT = {
 }
 
 
-def switch_reviews_mode(driver, book_id, sort_order="default", rating=""):
-    """
-    Copyright (C) 2019 by Omar Einea: https://github.com/OmarEinea/GoodReadsScraper
-    Licensed under GPL v3.0: https://github.com/OmarEinea/GoodReadsScraper/blob/master/LICENSE.md
-    Accessed on 2019-12-01.
-    """
-    edition_reviews = False
-    driver.execute_script(
-        'document.getElementById("reviews").insertAdjacentHTML("beforeend", \'<a data-remote="true" rel="nofollow"'
-        f'class="actionLinkLite loadingLink" data-keep-on-success="true" id="switch{rating}{sort_order}"'
-        + f'href="/book/reviews/{book_id}?rating={rating}&sort={sort_order}'
-        + ("&edition_reviews=true" if edition_reviews else "")
-        + "\">Switch Mode</a>');"
-        + f'document.getElementById("switch{rating}{sort_order}").click()'
-    )
-    return True
-
-
 def get_rating(node):
     if len(node.find_all("span", {"class": "staticStars"})) > 0:
         rating = node.find_all("span", {"class": "staticStars"})[0]["title"]
@@ -104,10 +86,15 @@ def get_num_likes(node):
 
 def get_shelves(node):
     shelves = []
+    pattern = re.compile("([\d]+.*)")
+
     if node.find("div", {"class": "uitext greyText bookshelves"}):
         _shelves_node = node.find("div", {"class": "uitext greyText bookshelves"})
         for _shelf_node in _shelves_node.find_all("a"):
-            shelves.append(_shelf_node.text)
+            shelves.append({
+                "name": _shelf_node.text,
+                "shelf_id": pattern.search(_shelf_node["href"]).group(),
+            })
     return shelves
 
 
@@ -174,13 +161,14 @@ def get_reviews(driver: webdriver.Chrome, book_id: str, pages: int = 1):
         # GoodReads will only load the first 10 pages of reviews.
         # Click through each of the following nine pages and scrape each page.
         page_counter = 2
-        while page_counter <= pages:
+        while page_counter < (pages + 1):
+            print(f"Scraping page {page_counter}")
             try:
-                if driver.find_element(By.LINK_TEXT, str(page_counter)):
-                    driver.find_element(By.LINK_TEXT, str(page_counter)).click()
+                driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+                if driver.find_element(By.CLASS_NAME, "next_page"):
+                    driver.find_element(By.CLASS_NAME, "next_page").click()
                     time.sleep(3)
                     reviews += scrape_reviews_on_current_page(driver, url, book_id)
-                    print(f"Scraped page {page_counter}")
                     page_counter += 1
                 else:
                     return reviews
@@ -188,7 +176,7 @@ def get_reviews(driver: webdriver.Chrome, book_id: str, pages: int = 1):
             except NoSuchElementException:
                 if page_counter == 10:
                     try:
-                        driver.find_element(By.LINK_TEXT, str(9)).click()
+                        driver.find_element(By.CLASS_NAME, "next_page").click()
                         time.sleep(2)
                         continue
                     except Exception:
@@ -201,7 +189,7 @@ def get_reviews(driver: webdriver.Chrome, book_id: str, pages: int = 1):
                 print(
                     "ERROR ElementNotVisibleException: Pop-up detected, reloading the page."
                 )
-                reviews = get_reviews(driver, book_id)
+                reviews = get_reviews(driver, book_id, pages)
                 return reviews
 
             except ElementClickInterceptedException:
@@ -228,21 +216,21 @@ def get_reviews(driver: webdriver.Chrome, book_id: str, pages: int = 1):
         )
         driver.get(url)
         time.sleep(3)
-        reviews = get_reviews(driver, book_id)
+        reviews = get_reviews(driver, book_id, pages)
         return reviews
 
     except ElementNotInteractableException:
         print(
             "🚨 ElementNotInteractableException🚨 \n🔄 Refreshing Goodreads site and rescraping book🔄"
         )
-        reviews = get_reviews(driver, book_id)
+        reviews = get_reviews(driver, book_id, pages)
         return reviews
 
     if check_for_duplicates(reviews) >= 30:
         print(
             f"ERROR: {check_for_duplicates(reviews)} duplicates found! Re-scraping this book."
         )
-        reviews = get_reviews(driver, book_id)
+        reviews = get_reviews(driver, book_id, pages)
         return reviews
     else:
         return reviews
@@ -281,11 +269,11 @@ def main():
     parser.add_argument(
         "--book-id", type=str, help="Goodreads book ID of one of your favorite books."
     )
-    parser.add_argument("--review-pages", type=int, help="Number of pages", default=1)
+    parser.add_argument("--pages", type=int, help="Number of pages", default=1)
     args = parser.parse_args()
 
     driver = initialize_driver()
-    results = get_reviews(driver, args.book_id, pages=args.review_pages)
+    results = get_reviews(driver, args.book_id, pages=args.pages)
     print(results)
     driver.quit()
 
